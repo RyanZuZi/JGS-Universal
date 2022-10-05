@@ -24,6 +24,11 @@ namespace UE4
 	uintptr_t SetClientLoginStateAddr;
 	uintptr_t SpawnActorAddr;
 
+	uint32_t NextOffset = 0x28;
+	uint32_t SuperOffset = 0x30;
+	uint32_t ChildrenOffset = 0x38;
+	uint32_t PropertyOffsetOffset = 0x44;
+
 	double FortniteVersion;
 	double EngineVersion;
 
@@ -241,22 +246,22 @@ namespace UE4
 
 	static UObject* GetFieldNext(UObject* Field)
 	{
-		return *(UObject**)(__int64(Field) + 0x28);
+		return *(UObject**)(__int64(Field) + NextOffset);
 	}
 
 	static UObject* GetStructSuper(UObject* Struct)
 	{
-		return *(UObject**)(__int64(Struct) + 0x30);
+		return *(UObject**)(__int64(Struct) + SuperOffset);
 	}
 
 	static UObject* GetStructChildren(UObject* Struct)
 	{
-		return *(UObject**)(__int64(Struct) + 0x38);
+		return *(UObject**)(__int64(Struct) + ChildrenOffset);
 	}
 
 	static int32_t GetPropertyOffset(UObject* Property)
 	{
-		return *(int32_t*)(__int64(Property) + 0x44);
+		return *(int32_t*)(__int64(Property) + PropertyOffsetOffset);
 	}
 
 	struct FUObjectItem
@@ -634,6 +639,9 @@ namespace UE4
 		
 		if (EngineVersion == 422)
 		{
+			ChildrenOffset = 0x48;
+			SuperOffset = 0x40;
+
 			GObjectsAddr = Util::FindPattern("48 8B 05 ? ? ? ? 48 8B 0C C8 48 8B 04 D1", true, 3);
 			NewObjects = decltype(NewObjects)(GObjectsAddr);
 
