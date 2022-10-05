@@ -12,7 +12,9 @@ namespace Hooks
 			{
 				bStartedAircraft = true;
 
-
+				auto GamePhase = (int*)(__int64(Helpers::GetGameState()) + UE4::Offsets::GamePhaseOffset);
+				*GamePhase = 2;
+				Helpers::OnRep_GamePhase(Helpers::GetGameState(), 0);
 			}
 		}
 
@@ -32,6 +34,7 @@ namespace Hooks
 				bSetup = true;
 
 				Net::Listen();
+				Helpers::InitMatch();
 
 				CreateThread(0, 0, TickThread, 0, 0, 0);
 			}

@@ -22,6 +22,18 @@ namespace UE4
 		static int32_t NetDriverOffset;
 		static int32_t NetDriverOffset2;
 		static int32_t LevelCollectionsOffset;
+		static int32_t ReplicationIDOffset;
+		static int32_t ReplicationKeyOffset;
+		static int32_t CurrentPlaylistDataOffset;
+		static int32_t PlaylistReplicationKeyOffset;
+		static int32_t BasePlaylistOffset;
+		static int32_t OverridePlaylistOffset;
+		static int32_t CurrentPlaylistInfoOffset;
+		static int32_t GameStateOffset;
+		static int32_t GameModeOffset;
+		static int32_t GamePhaseOffset;
+		static int32_t GameSessionOffset;
+		static int32_t MaxPlayersOffset;
 
 		static void Init()
 		{
@@ -41,6 +53,18 @@ namespace UE4
 			NetDriverOffset = FindOffset("OnlineBeacon", "NetDriver");
 			NetDriverOffset2 = FindOffset("World", "NetDriver");
 			LevelCollectionsOffset = FindOffset("World", "LevelCollections");
+			ReplicationIDOffset = FindOffset("FastArraySerializerItem", "ReplicationID");
+			ReplicationKeyOffset = FindOffset("FastArraySerializerItem", "ReplicationKey");
+			CurrentPlaylistDataOffset = FindOffset("FortGameStateAthena", "CurrentPlaylistData");
+			PlaylistReplicationKeyOffset = FindOffset("PlaylistPropertyArray", "PlaylistReplicationKey");
+			BasePlaylistOffset = FindOffset("PlaylistPropertyArray", "BasePlaylist");
+			OverridePlaylistOffset = FindOffset("PlaylistPropertyArray", "OverridePlaylist");
+			CurrentPlaylistInfoOffset = FindOffset("FortGameStateAthena", "CurrentPlaylistInfo");
+			GameStateOffset = FindOffset("World", "GameState");
+			GameModeOffset = FindOffset("World", "AuthorityGameMode");
+			GamePhaseOffset = FindOffset("FortGameStateAthena", "GamePhase");
+			GameSessionOffset = FindOffset("GameModeBase", "GameSession");
+			MaxPlayersOffset = FindOffset("GameSession", "MaxPlayers");
 		}
 	}
 
@@ -56,6 +80,9 @@ namespace UE4
 		static UObject* BeginDeferredActorSpawnFromClassFunc;
 		static UObject* FinishSpawningActorFunc;
 		static UObject* SpawnObjectFunc;
+		static UObject* OnRep_CurrentPlaylistDataFunc;
+		static UObject* OnRep_CurrentPlaylistInfoFunc;
+		static UObject* OnRep_GamePhaseFunc;
 
 		static void Init()
 		{
@@ -69,6 +96,9 @@ namespace UE4
 			BeginDeferredActorSpawnFromClassFunc = FindFunction("GameplayStatics", "BeginDeferredActorSpawnFromClass");
 			FinishSpawningActorFunc = FindFunction("GameplayStatics", "FinishSpawningActor");
 			SpawnObjectFunc = FindFunction("GameplayStatics", "SpawnObject");
+			OnRep_CurrentPlaylistDataFunc = FindFunction("FortGameStateAthena", "OnRep_CurrentPlaylistData");
+			OnRep_CurrentPlaylistInfoFunc = FindFunction("FortGameStateAthena", "OnRep_CurrentPlaylistInfo");
+			OnRep_GamePhaseFunc = FindFunction("FortGameStateAthena", "OnRep_GamePhase");
 		}
 	}
 }

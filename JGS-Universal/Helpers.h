@@ -17,6 +17,21 @@ namespace Helpers
 		return World;
 	}
 
+	static UE4::UObject* GetGameState()
+	{
+		return *(UE4::UObject**)(__int64(GetWorld()) + UE4::Offsets::GameStateOffset);
+	}
+
+	static UE4::UObject* GetGameMode()
+	{
+		return *(UE4::UObject**)(__int64(GetWorld()) + UE4::Offsets::GameModeOffset);
+	}
+
+	static UE4::UObject* GetGameSession()
+	{
+		return *(UE4::UObject**)(__int64(GetGameMode()) + UE4::Offsets::GameSessionOffset);
+	}
+
 	static void SwitchLevel(UE4::UObject* Controller, UE4::FString URL)
 	{
 		UE4::ProcessEvent(Controller, UE4::Functions::SwitchLevelFunc, &URL);
@@ -146,11 +161,90 @@ namespace Helpers
 		return params.ReturnValue;
 	}
 
+	static void OnRep_CurrentPlaylistData(UE4::UObject* GameState)
+	{
+		UE4::ProcessEvent(GameState, UE4::Functions::OnRep_CurrentPlaylistDataFunc, nullptr);
+	}
+
+	static void OnRep_CurrentPlaylistInfo(UE4::UObject* GameState)
+	{
+		UE4::ProcessEvent(GameState, UE4::Functions::OnRep_CurrentPlaylistInfoFunc, nullptr);
+	}
+
+	static void OnRep_GamePhase(UE4::UObject* GameState, int OldPhase)
+	{
+		UE4::ProcessEvent(GameState, UE4::Functions::OnRep_GamePhaseFunc, &OldPhase);
+	}
+
 	static UE4::FString GetMapName()
 	{
 		if (UE4::EngineVersion >= 4.24)
 			return L"Apollo_Terrain";
 		else
 			return L"Athena_Terrain";
+	}
+
+	static void MarkArrayDirty(void* FastArray)
+	{
+		auto ArrayReplicationKey = (int*)(__int64(FastArray) + 0x54);
+
+		auto CachedNumItems = UE4::EngineVersion >= 4.23 ? (int*)(__int64(FastArray) + 0xF8) : (int*)(__int64(FastArray) + 0xA8);
+		auto CachedNumItemsToConsiderForWriting = UE4::EngineVersion >= 4.23 ? (int*)(__int64(FastArray) + 0xFC) : (int*)(__int64(FastArray) + 0xAC);
+
+		*CachedNumItems = 0;
+		*CachedNumItemsToConsiderForWriting = 0;
+
+		++*ArrayReplicationKey;
+		if (*ArrayReplicationKey == 0)
+			++*ArrayReplicationKey;
+	}
+
+	static void MarkItemDirty(void* FastArray, void* Item)
+	{
+		auto ReplicationID = (int*)(__int64(Item) + UE4::Offsets::ReplicationIDOffset);
+		auto ReplicationKey = (int*)(__int64(Item) + UE4::Offsets::ReplicationKeyOffset);
+		auto IDCounter = (int*)(__int64(FastArray) + 0x50);
+
+		if (*ReplicationID == 0)
+		{
+			*ReplicationID = ++*IDCounter;
+			if (*IDCounter == 0)
+				++*IDCounter;
+		}
+
+		++*ReplicationKey;
+
+		MarkArrayDirty(FastArray);
+	}
+
+	static void SetPlaylist(UE4::UObject* GameState, UE4::UObject* Playlist)
+	{
+		if (UE4::FortniteVersion > 5)
+		{
+			auto CurrentPlaylistInfo = (void*)(__int64(GameState) + UE4::Offsets::CurrentPlaylistInfoOffset);
+			*(UE4::UObject**)(__int64(CurrentPlaylistInfo) + UE4::Offsets::BasePlaylistOffset) = Playlist;
+			*(UE4::UObject**)(__int64(CurrentPlaylistInfo) + UE4::Offsets::OverridePlaylistOffset) = Playlist;
+			++*(int*)(__int64(CurrentPlaylistInfo) + UE4::Offsets::PlaylistReplicationKeyOffset);
+			MarkArrayDirty(CurrentPlaylistInfo);
+			OnRep_CurrentPlaylistInfo(GameState);
+		}
+		else {
+			auto CurrentPlaylistData = (UE4::UObject**)(__int64(GameState) + UE4::Offsets::CurrentPlaylistDataOffset);
+			*CurrentPlaylistData = Playlist;
+			OnRep_CurrentPlaylistData(GameState);
+		}
+	}
+
+	static void InitMatch()
+	{
+		auto SoloPlaylist = UE4::FindObject("Playlist_DefaultSolo.Playlist_DefaultSolo");
+		SetPlaylist(GetGameState(), SoloPlaylist);
+
+		auto GamePhase = (int*)(__int64(GetGameState()) + UE4::Offsets::GamePhaseOffset);
+		*GamePhase = 0;
+		OnRep_GamePhase(GetGameState(), 0);
+
+		auto MaxPlayers = (int*)(__int64(GetGameSession()) + UE4::Offsets::MaxPlayersOffset);
+		*MaxPlayers = 100;
 	}
 }
