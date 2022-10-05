@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="dllmain.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Engine">
+      <UniqueIdentifier>{b144eebb-ef18-4df5-a65c-322fb7538dd1}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Structs.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Enums.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Offsets.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Util.h" />
+    <ClInclude Include="Helpers.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Net.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Hooks.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

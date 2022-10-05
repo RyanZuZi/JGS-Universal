@@ -1,0 +1,717 @@
+#pragma once
+
+#include <string>
+#include <locale>
+#include <format>
+#include <regex>
+
+namespace UE4
+{
+	uintptr_t GObjectsAddr;
+	uintptr_t FNameToStringAddr;
+	uintptr_t FreeMemoryAddr;
+	uintptr_t ProcessEventAddr;
+	uintptr_t CreateDefaultObjectAddr;
+	uintptr_t InitHostAddr;
+	uintptr_t InitListenAddr;
+	uintptr_t SetWorldAddr;
+	uintptr_t SetReplicationDriverAddr; //Not required for all versions
+	uintptr_t ServerReplicateActorsAddr;
+	uintptr_t TickFlushAddr;
+	uintptr_t GetNetModeAddr; //Todo get this for every version
+	uintptr_t GiveAbilityAddr;
+	uintptr_t InternalTryActivateAbilityAddr;
+	uintptr_t SetClientLoginStateAddr;
+	uintptr_t SpawnActorAddr;
+
+	double FortniteVersion;
+	double EngineVersion;
+
+	class FFixedUObjectArray* OldObjects;
+	class FChunkedFixedUObjectArray* NewObjects;
+
+	void(*FNameToString)(void*, struct FString&);
+	void(*FreeMemory)(void*);
+	void(*ProcessEvent)(void*, void*, void*);
+	struct UObject* (*SpawnActor)(struct UObject* World, struct UObject* Class, struct FTransform* Transform, struct FActorSpawnParameters* SpawnParms);
+
+	template<class T>
+	struct TArray
+	{
+		friend struct FString;
+
+	public:
+		inline TArray()
+		{
+			Data = nullptr;
+			Count = Max = 0;
+		};
+
+		inline int Num() const
+		{
+			return Count;
+		};
+
+		inline T& operator[](int i)
+		{
+			return Data[i];
+		};
+
+		inline const T& operator[](int i) const
+		{
+			return Data[i];
+		};
+
+		inline bool IsValidIndex(int i) const
+		{
+			return i < Num();
+		}
+
+		inline int Add(T InputData, size_t Size)
+		{
+			Data = (T*)std::realloc(Data, sizeof(T) * (Count + 1), 0);
+			Data[Count++] = InputData;
+			Max = Count;
+
+			memcpy_s((T*)(__int64(Data) + (Count * Size)), Size, (void*)&InputData, Size);
+
+			++Count;
+			++Max;
+
+			return Count;
+		};
+
+		inline bool Remove(int Index)
+		{
+			if (Index < Count)
+			{
+				if (Index != Count - 1)
+					Data[Index] = Data[Count - 1];
+
+				--Count;
+
+				return true;
+			}
+			return false;
+		}
+
+		inline void RemoveAt(int Index, int Lenght = 1)
+		{
+			for (; Lenght != 0; --Lenght)
+			{
+				if (!Remove(Index++))
+					break;
+			}
+		}
+
+		T* Data;
+		int32_t Count;
+		int32_t Max;
+	};
+
+	struct FString : private TArray<wchar_t>
+	{
+		inline FString()
+		{
+		};
+
+		FString(const wchar_t* other)
+		{
+			Max = Count = *other ? std::wcslen(other) + 1 : 0;
+
+			if (Count)
+			{
+				Data = const_cast<wchar_t*>(other);
+			}
+		};
+
+		inline bool IsValid() const
+		{
+			return Data != nullptr;
+		}
+
+		inline const wchar_t* c_str() const
+		{
+			return Data;
+		}
+
+		std::string ToString() const
+		{
+			auto length = std::wcslen(Data);
+
+			std::string str(length, '\0');
+
+			std::use_facet<std::ctype<wchar_t>>(std::locale()).narrow(Data, Data + length, '?', &str[0]);
+
+			return str;
+		}
+	};
+
+	template<class TEnum>
+	class TEnumAsByte
+	{
+	public:
+		inline TEnumAsByte()
+		{
+		}
+
+		inline TEnumAsByte(TEnum _value)
+			: value(static_cast<uint8_t>(_value))
+		{
+		}
+
+		explicit inline TEnumAsByte(int32_t _value)
+			: value(static_cast<uint8_t>(_value))
+		{
+		}
+
+		explicit inline TEnumAsByte(uint8_t _value)
+			: value(_value)
+		{
+		}
+
+		inline operator TEnum() const
+		{
+			return (TEnum)value;
+		}
+
+		inline TEnum GetValue() const
+		{
+			return (TEnum)value;
+		}
+
+	private:
+		uint8_t value;
+	};
+
+	struct FName
+	{
+		int32_t ComparisonIndex;
+		int32_t Number;
+
+		inline std::string ToString()
+		{
+			FString Buf;
+
+			FNameToString(this, Buf);
+
+			std::string String(Buf.ToString());
+
+			FreeMemory((void*)Buf.c_str());
+
+			return String;
+		}
+	};
+
+	static struct UObject* GetStructSuper(UObject* Struct);
+
+	struct UObject
+	{
+		void** VFT;
+		int32_t ObjectFlags;
+		int32_t InternalIndex;
+		UObject* ClassPrivate;
+		FName NamePrivate;
+		UObject* OuterPrivate;
+
+		inline std::string GetName()
+		{
+			return NamePrivate.ToString();
+		}
+
+		inline std::string GetFullName()
+		{
+			std::string Temp;
+
+			for (auto Outer = OuterPrivate; Outer; Outer = Outer->OuterPrivate)
+				Temp = std::format("{}.{}", Outer->GetName(), Temp);
+
+			return std::format("{} {}.{}", ClassPrivate->GetName(), Temp, GetName());
+		}
+
+		inline bool IsA(UObject* cmp)
+		{
+			for (auto Super = ClassPrivate; Super; Super = GetStructSuper(Super))
+				if (Super == cmp)
+					return true;
+
+			return false;
+		}
+	};
+
+	static UObject* GetFieldNext(UObject* Field)
+	{
+		return *(UObject**)(__int64(Field) + 0x28);
+	}
+
+	static UObject* GetStructSuper(UObject* Struct)
+	{
+		return *(UObject**)(__int64(Struct) + 0x30);
+	}
+
+	static UObject* GetStructChildren(UObject* Struct)
+	{
+		return *(UObject**)(__int64(Struct) + 0x38);
+	}
+
+	static int32_t GetPropertyOffset(UObject* Property)
+	{
+		return *(int32_t*)(__int64(Property) + 0x44);
+	}
+
+	struct FUObjectItem
+	{
+		UObject* Object;
+		int32_t Flags;
+		int32_t ClusterRootIndex;
+		int32_t SerialNumber;
+	};
+
+	class FFixedUObjectArray
+	{
+		FUObjectItem* Objects;
+		int32_t MaxElements;
+		int32_t NumElements;
+
+	public:
+
+		FORCEINLINE int32_t Num() const
+		{
+			return NumElements;
+		}
+
+		FORCEINLINE int32_t Capacity() const
+		{
+			return MaxElements;
+		}
+
+		FORCEINLINE bool IsValidIndex(int32_t Index) const
+		{
+			return Index < Num() && Index >= 0;
+		}
+
+		FORCEINLINE UObject* GetByIndex(int32_t Index)
+		{
+			if (IsValidIndex(Index))
+				return Objects[Index].Object;
+
+			return nullptr;
+		}
+	};
+
+	class FChunkedFixedUObjectArray
+	{
+		enum
+		{
+			NumElementsPerChunk = 64 * 1024,
+		};
+
+		FUObjectItem** Objects;
+		FUObjectItem* PreAllocatedObjects;
+		int32_t MaxElements;
+		int32_t NumElements;
+		int32_t MaxChunks;
+		int32_t NumChunks;
+
+	public:
+
+		FORCEINLINE int32_t Num() const
+		{
+			return NumElements;
+		}
+
+		FORCEINLINE int32_t Capacity() const
+		{
+			return MaxElements;
+		}
+
+		FORCEINLINE bool IsValidIndex(int32_t Index) const
+		{
+			return Index < Num() && Index >= 0;
+		}
+
+		FORCEINLINE UObject* GetByIndex(int32_t Index)
+		{
+			const int32_t ChunkIndex = Index / NumElementsPerChunk;
+			const int32_t WithinChunkIndex = Index % NumElementsPerChunk;
+
+			if (!IsValidIndex(Index)) return nullptr;
+			if (ChunkIndex > NumChunks) return nullptr;
+			if (Index > MaxElements) return nullptr;
+
+			FUObjectItem* Chunk = Objects[ChunkIndex];
+			if (!Chunk) return nullptr;
+
+			return (Chunk + WithinChunkIndex)->Object;
+		}
+	};
+
+	static UObject* FindObject(std::string Name, bool bEqual = false, bool bFullName = true)
+	{
+		if (NewObjects)
+		{
+			for (int i = 0; i < NewObjects->Num(); i++)
+			{
+				auto Object = NewObjects->GetByIndex(i);
+
+				if (!Object)
+					continue;
+
+				if (bEqual)
+				{
+					if (bFullName)
+					{
+						if (Object->GetFullName() == Name)
+							return Object;
+					}
+					else {
+						if (Object->GetName() == Name)
+							return Object;
+					}
+				}
+				else {
+					if (bFullName)
+					{
+						if (Object->GetFullName().contains(Name))
+							return Object;
+					}
+					else {
+						if (Object->GetName().contains(Name))
+							return Object;
+					}
+				}
+			}
+		}
+
+		if (OldObjects)
+		{
+			for (int i = 0; i < OldObjects->Num(); i++)
+			{
+				auto Object = OldObjects->GetByIndex(i);
+
+				if (!Object)
+					continue;
+
+				if (bEqual)
+				{
+					if (bFullName)
+					{
+						if (Object->GetFullName() == Name)
+							return Object;
+					}
+					else {
+						if (Object->GetName() == Name)
+							return Object;
+					}
+				}
+				else {
+					if (bFullName)
+					{
+						if (Object->GetFullName().contains(Name))
+							return Object;
+					}
+					else {
+						if (Object->GetName().contains(Name))
+							return Object;
+					}
+				}
+			}
+		}
+
+		return nullptr;
+	}
+
+	static int32_t FindOffset(std::string ClassName, std::string PropertyName)
+	{
+		static auto PropertyClass = FindObject("Property", true, false);
+
+		UObject* Class = FindObject(ClassName, true, false);
+
+		int32_t RetValue = 0;
+
+		if (Class)
+		{
+			auto Children = GetStructChildren(Class);
+			
+			while (Children)
+			{
+				if (Children->IsA(PropertyClass))
+				{
+					if (Children->GetName() == PropertyName)
+					{
+						RetValue = GetPropertyOffset(Children);
+					}
+				}
+
+				Children = GetFieldNext(Children);
+			}
+		}
+
+		if (RetValue == 0)
+			LOG(Warning, "Failed to find {}::{} Offset!", ClassName, PropertyName);
+
+		return RetValue;
+	}
+
+	static UObject* FindFunction(std::string ClassName, std::string FunctionName)
+	{
+		static auto FunctionClass = FindObject("Function", true, false);
+
+		UObject* Class = FindObject(ClassName, true, false);
+
+		UObject* RetValue = nullptr;
+
+		if (Class)
+		{
+			auto Children = GetStructChildren(Class);
+
+			while (Children)
+			{
+				if (Children->IsA(FunctionClass))
+				{
+					if (Children->GetName() == FunctionName)
+					{
+						RetValue = Children;
+					}
+				}
+
+				Children = GetFieldNext(Children);
+			}
+		}
+
+		if (RetValue == nullptr)
+			LOG(Warning, "Failed to find function {}::{}", ClassName, FunctionName);
+
+		return RetValue;
+	}
+
+	FString(*GetEngineVersion)();
+
+	static void InitEngineVersion()
+	{
+		GetEngineVersion = decltype(GetEngineVersion)(Util::FindPattern("40 53 48 83 EC 20 48 8B D9 E8 ? ? ? ? 48 8B C8 41 B8 04 ? ? ? 48 8B D3"));
+
+		std::string FullVersion;
+		FString toFree;
+
+		if (!GetEngineVersion)
+		{
+			auto VerStr = Util::FindPattern("2B 2B 46 6F 72 74 6E 69 74 65 2B 52 65 6C 65 61 73 65 2D ? ? ? ?");
+
+			if (!VerStr)
+			{
+				MessageBoxA(0, "Failed to find fortnite version!", "Fortnite", MB_ICONERROR);
+				return;
+			}
+
+			FullVersion = decltype(FullVersion.c_str())(VerStr);
+			EngineVersion = 500;
+		}
+		else
+		{
+			toFree = GetEngineVersion();
+			FullVersion = toFree.ToString();
+		}
+
+		std::string FNVer = FullVersion;
+		std::string EngineVer = FullVersion;
+
+		if (!FullVersion.contains("Live") && !FullVersion.contains("Next") && !FullVersion.contains("Cert"))
+		{
+			if (GetEngineVersion)
+			{
+				FNVer.erase(0, FNVer.find_last_of("-", FNVer.length() - 1) + 1);
+				EngineVer.erase(EngineVer.find_first_of("-", FNVer.length() - 1), 40);
+
+				if (EngineVer.find_first_of(".") != EngineVer.find_last_of(".")) // this is for 4.21.0 and itll remove the .0
+					EngineVer.erase(EngineVer.find_last_of("."), 2);
+
+				EngineVersion = std::stod(EngineVer) * 100;
+			}
+			else
+			{
+				const std::regex base_regex("-([0-9.]*)-");
+				std::cmatch base_match;
+
+				std::regex_search(FullVersion.c_str(), base_match, base_regex);
+
+				FNVer = base_match[1];
+
+				auto FnVerDouble = std::stod(FNVer);
+
+				FortniteVersion = FnVerDouble;
+			}
+		}
+		else
+		{
+			EngineVersion = 419;
+			FortniteVersion = 2.4;
+		}
+	}
+
+	static void Init()
+	{
+		InitEngineVersion();
+
+		if (EngineVersion == 420)
+		{
+			GObjectsAddr = Util::FindPattern("48 8B 05 ? ? ? ? 48 8D 14 C8 EB 02", true, 3);;
+			OldObjects = decltype(OldObjects)(GObjectsAddr);
+
+			FNameToStringAddr = Util::FindPattern("48 89 5C 24 ? 57 48 83 EC 40 83 79 04 00 48 8B DA 48 8B F9");
+			FNameToString = decltype(FNameToString)(FNameToStringAddr);
+
+			FreeMemoryAddr = Util::FindPattern("48 85 C9 74 1D 4C 8B 05 ? ? ? ?");
+			FreeMemory = decltype(FreeMemory)(FreeMemoryAddr);
+
+			CreateDefaultObjectAddr = Util::FindPattern("4C 8B DC 57 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 ? ? ? ? 48 83 B9 ? ? ? ? ? 48 8B F9 0F 85 ? ? ? ? 49 89 5B 10 48 8B 59 30");
+			InitHostAddr = Util::FindPattern("48 8B C4 48 81 EC ? ? ? ? 48 89 58 18 4C 8D 05 ? ? ? ? 48 8B D9 48 89 78 F8 48 8D 48 88 45 33 C9");
+			InitListenAddr = Util::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 50 48 8B BC 24 ? ? ? ? 49 8B F0 48 8B 01 48 8B D9");
+
+			SetWorldAddr = Util::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 20 48 8B B1 ? ? ? ? 48 8B FA 48 8B D9 48 85 F6 74 5C");
+			if (!SetWorldAddr)
+				SetWorldAddr = Util::FindPattern("48 89 5C 24 ? 57 48 83 EC 20 48 8B FA 48 8B D9 48 8B 91 ? ? ? ? 48 85 D2 74 28");
+
+			ServerReplicateActorsAddr = Util::FindPattern("4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B 41 58");
+			if (!ServerReplicateActorsAddr)
+				ServerReplicateActorsAddr = Util::FindPattern("4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B 41 58 45 33 C9");
+
+			TickFlushAddr = Util::FindPattern("4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 48 8D 05 ? ? ? ? 49 89 73 F0 33 F6");
+			GiveAbilityAddr = Util::FindPattern("48 89 5C 24 ? 56 57 41 56 48 83 EC 20 83 B9 ? ? ? ? ? 49 8B F0 4C 8B F2 48 8B D9 7E 61 48 63 BB ? ? ? ? 48 81 C3 ? ? ? ?");
+			InternalTryActivateAbilityAddr = Util::FindPattern("4C 89 4C 24 ? 4C 89 44 24 ? 89 54 24 10 55 53 56 57 41 54 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ?");
+			SetClientLoginStateAddr = Util::FindPattern("48 89 74 24 ? 57 48 83 EC 40 8B FA 48 8B F1 39 91 ? ? ? ? 75 50 80 3D ? ? ? ? ? 0F 82 ? ? ? ? 48 8B 05 ? ? ? ?");
+			SpawnActorAddr = Util::FindPattern("49 89 5B E8 48 8D 05 ? ? ? ? 49 89 73 E0 45 33");
+
+			SpawnActor = decltype(SpawnActor)(SpawnActorAddr);
+
+			ProcessEventAddr = (uintptr_t)OldObjects->GetByIndex(0)->VFT[0x40];
+			ProcessEvent = decltype(ProcessEvent)(ProcessEventAddr);
+		}
+
+		if (EngineVersion == 421)
+		{
+			GObjectsAddr = Util::FindPattern("48 8B 05 ? ? ? ? 48 8B 0C C8 48 8B 04 D1", true, 3);
+			NewObjects = decltype(NewObjects)(GObjectsAddr);
+
+			FNameToStringAddr = Util::FindPattern("48 89 5C 24 ? 57 48 83 EC 40 83 79 04 00 48 8B DA 48 8B F9");
+			if (!FNameToStringAddr)
+				FNameToStringAddr = Util::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 20 48 8B DA 48 8B F1 E8 ? ? ? ? 4C 8B C8");
+
+			if (!FNameToStringAddr)
+				FNameToStringAddr = Util::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 48 8B DA 4C 8B F1 E8 ? ? ? ? 4C 8B C8");
+
+			FNameToString = decltype(FNameToString)(FNameToStringAddr);
+
+			FreeMemoryAddr = Util::FindPattern("48 85 C9 74 2E 53 48 83 EC 20 48 8B D9");
+			FreeMemory = decltype(FreeMemory)(FreeMemoryAddr);
+
+			CreateDefaultObjectAddr = Util::FindPattern("4C 8B DC 57 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 ? ? ? ? 48 83 B9 ? ? ? ? ? 48 8B F9 0F 85 ? ? ? ? 49 89 5B 10 48 8B 59 30");
+			InitHostAddr = Util::FindPattern("48 8B C4 48 81 EC ? ? ? ? 48 89 58 18 4C 8D 05 ? ? ? ? 48 8B D9 48 89 78 F8 48 8D 48 88 45 33 C9 33 D2");
+			InitListenAddr = Util::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 50 48 8B BC 24 ? ? ? ? 49 8B F0 48 8B 01 48 8B D9");
+			SetWorldAddr = Util::FindPattern("48 89 5C 24 ? 57 48 83 EC 20 48 8B FA 48 8B D9 48 8B 91 ? ? ? ? 48 85 D2 74 28");
+			ServerReplicateActorsAddr = Util::FindPattern("4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B 41 30 45 33 C0 49 89 5B 10 49 89 73 18 49 89 7B 20 41 8B F8");
+			TickFlushAddr = Util::FindPattern("4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 48 8D 05 ? ? ? ? 49 89 73 F0 33 F6");
+			GiveAbilityAddr = Util::FindPattern("48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9 ? ? ? ? ? 49 8B E8 4C 8B F2 48 8B F9");
+
+			InternalTryActivateAbilityAddr = Util::FindPattern("4C 89 4C 24 ? 4C 89 44 24 ? 89 54 24 10 55 53 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 45 33 FF 48 8D 05 ? ? ? ? 44 38 3D ? ? ? ? 8B FA");
+			if (!InternalTryActivateAbilityAddr)
+				InternalTryActivateAbilityAddr = Util::FindPattern("4C 89 4C 24 ? 4C 89 44 24 ? 89 54 24 10 55 53 56 57 41 54 41 55 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 45 33 FF 48 8D 05 ? ? ? ? 44 38 3D ? ? ? ? 8B FA");
+
+			if (!InternalTryActivateAbilityAddr)
+				InternalTryActivateAbilityAddr = Util::FindPattern("4C 89 4C 24 ? 4C 89 44 24 ? 89 54 24 10 55 53 56 57 41 54 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 45 33 F6 48 8D 05 ? ? ? ? 44 38 35 ? ? ? ? 8B FA");
+
+			SetClientLoginStateAddr = Util::FindPattern("48 89 5C 24 ? 57 48 83 EC 40 8B DA 48 8B F9 8B 91 ? ? ? ? 3B D3 0F 85 ? ? ? ? 80 3D ? ? ? ? ? 0F 82 ? ? ? ? 85 DB 74 41");
+			if (!SetClientLoginStateAddr)
+				SetClientLoginStateAddr = Util::FindPattern("48 89 5C 24 ? 57 48 83 EC 40 8B DA 48 8B F9 39 91 ? ? ? ? 0F 85 ? ? ? ? 80 3D ? ? ? ? ? 0F 82 ? ? ? ? 85 D2");
+
+
+
+			ProcessEventAddr = (uintptr_t)NewObjects->GetByIndex(0)->VFT[0x40];
+			ProcessEvent = decltype(ProcessEvent)(ProcessEventAddr);
+		}
+		
+		if (EngineVersion == 422)
+		{
+
+		}
+
+		if (!GObjectsAddr)
+			LOG(Error, "Failed to find GObjects Address!");
+		if (!FNameToStringAddr)
+			LOG(Error, "Failed to find FNameToString Address!");
+		if (!FreeMemoryAddr)
+			LOG(Error, "Failed to find FreeMemory Address!");
+		if (!CreateDefaultObjectAddr)
+			LOG(Error, "Failed to find CreateDefaultObject Address!");
+		if (!InitHostAddr)
+			LOG(Error, "Failed to find InitHost Address!");
+		if (!InitListenAddr)
+			LOG(Error, "Failed to find InitListen Address!");
+		if (!SetWorldAddr)
+			LOG(Error, "Failed to find SetWorld Address!");
+		if (!SetReplicationDriverAddr && EngineVersion >= 423)
+			LOG(Error, "Failed to find SetReplicationDriver Address!");
+		if (!ServerReplicateActorsAddr)
+			LOG(Error, "Failed to find ServerReplicateActors Address!");
+		if (!TickFlushAddr)
+			LOG(Error, "Failed to find TickFlush Address!");
+		if (!GiveAbilityAddr)
+			LOG(Error, "Failed to find GiveAbility Address!");
+		if (!InternalTryActivateAbilityAddr)
+			LOG(Error, "Failed to find InternalTryActivateAbility Address!");
+		if (!SetClientLoginStateAddr)
+			LOG(Error, "Failed to find SetClientLoginState Address!");
+		if (!SpawnActor)
+			LOG(Error, "Failed to find SpawnActor Address!");
+	}
+
+	//Other structs
+
+	struct FURL
+	{
+		char pad[0x20];
+		int Port;
+	};
+
+	struct FVector
+	{
+		float X;
+		float Y;
+		float Z;
+	};
+
+	struct FRotator
+	{
+		float Pitch;
+		float Yaw;
+		float Roll;
+	};
+
+	struct FQuat
+	{
+		float X;
+		float Y;
+		float Z;
+		float W;
+	};
+
+	struct FTransform
+	{
+		FQuat Rotation;
+		FVector Translation;
+		char pad01[0x4];
+		FVector Scale3D;
+		char pad02[0x4];
+	};
+
+	struct FLevelCollection
+	{
+		char pad[0x8];
+		UObject* GameState;
+		UObject* NetDriver;
+		UObject* DemoNetDriver;
+		UObject* PersistentLevel;
+		char pad1[0x50];
+		char pad2[0x8];
+	};
+}
