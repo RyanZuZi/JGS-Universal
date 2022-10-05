@@ -83,42 +83,6 @@ namespace Helpers
 		return Quat;
 	}
 
-	static UE4::UObject* BeginDeferredActorSpawnFromClass(UE4::UObject* WorldContextObject, UE4::UObject* ActorClass, UE4::FTransform Transform, UE4::ESpawnActorCollisionHandlingMethod SpawnActorCollisionHandlingMethod, UE4::UObject* Owner)
-	{
-		struct {
-			UE4::UObject* WorldContextObject;
-			UE4::UObject* ActorClass;
-			UE4::FTransform Transform;
-			UE4::ESpawnActorCollisionHandlingMethod SpawnActorCollisionHandlingMethod;
-			UE4::UObject* Owner;
-			UE4::UObject* ReturnValue;
-		}params;
-		params.WorldContextObject = WorldContextObject;
-		params.ActorClass = ActorClass;
-		params.Transform = Transform;
-		params.SpawnActorCollisionHandlingMethod = SpawnActorCollisionHandlingMethod;
-		params.Owner = Owner;
-
-		UE4::ProcessEvent(UE4::Offsets::Default__GameplayStatics, UE4::Functions::BeginDeferredActorSpawnFromClassFunc, &params);
-
-		return params.ReturnValue;
-	}
-
-	static UE4::UObject* FinishSpawningActor(UE4::UObject* Actor, UE4::FTransform Transform)
-	{
-		struct {
-			UE4::UObject* Actor;
-			UE4::FTransform Transform;
-			UE4::UObject* ReturnValue;
-		}params;
-		params.Actor = Actor;
-		params.Transform = Transform;
-
-		UE4::ProcessEvent(UE4::Offsets::Default__GameplayStatics, UE4::Functions::FinishSpawningActorFunc, &params);
-
-		return params.ReturnValue;
-	}
-
 	static UE4::UObject* SpawnActor(UE4::UObject* Class, UE4::FVector Location, UE4::FRotator Rotation)
 	{
 		UE4::FTransform Transform;
@@ -126,8 +90,6 @@ namespace Helpers
 		Transform.Translation = Location;
 		Transform.Scale3D = { 1,1,1 };
 
-		auto Actor = BeginDeferredActorSpawnFromClass(GetWorld(), Class, Transform, UE4::ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn, nullptr);
-		FinishSpawningActor(Actor, Transform);
-		return Actor;
+		return UE4::SpawnActor(GetWorld(), Class, &Transform, new UE4::FActorSpawnParameters);
 	}
 }

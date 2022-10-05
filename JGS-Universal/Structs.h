@@ -226,7 +226,7 @@ namespace UE4
 			for (auto Outer = OuterPrivate; Outer; Outer = Outer->OuterPrivate)
 				Temp = std::format("{}.{}", Outer->GetName(), Temp);
 
-			return std::format("{} {}.{}", ClassPrivate->GetName(), Temp, GetName());
+			return std::format("{} {}{}", ClassPrivate->GetName(), Temp, GetName());
 		}
 
 		inline bool IsA(UObject* cmp)
@@ -624,7 +624,9 @@ namespace UE4
 			if (!SetClientLoginStateAddr)
 				SetClientLoginStateAddr = Util::FindPattern("48 89 5C 24 ? 57 48 83 EC 40 8B DA 48 8B F9 39 91 ? ? ? ? 0F 85 ? ? ? ? 80 3D ? ? ? ? ? 0F 82 ? ? ? ? 85 D2");
 
+			SpawnActorAddr = Util::FindPattern("49 89 5B E8 48 8D 05 ? ? ? ? 49 89 73 E0 45 33");
 
+			SpawnActor = decltype(SpawnActor)(SpawnActorAddr);
 
 			ProcessEventAddr = (uintptr_t)NewObjects->GetByIndex(0)->VFT[0x40];
 			ProcessEvent = decltype(ProcessEvent)(ProcessEventAddr);
@@ -713,5 +715,21 @@ namespace UE4
 		UObject* PersistentLevel;
 		char pad1[0x50];
 		char pad2[0x8];
+	};
+
+	struct FActorSpawnParameters
+	{
+		// char pad[0x40];
+		FName Name;
+		UObject* Template; // AActor*
+		UObject* Owner; // AActor*
+		UObject* Instigator; // APawn*
+		UObject* OverrideLevel; // ULevel*
+		ESpawnActorCollisionHandlingMethod SpawnCollisionHandlingOverride;
+		uint16_t	bRemoteOwned : 1;
+		uint16_t	bNoFail : 1;
+		uint16_t	bDeferConstruction : 1;
+		uint16_t	bAllowDuringConstructionScript : 1;
+		int ObjectFlags;
 	};
 }
