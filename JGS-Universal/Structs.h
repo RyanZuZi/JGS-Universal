@@ -67,7 +67,7 @@ namespace UE4
 			return i < Num();
 		}
 
-		inline int Add(T InputData, size_t Size)
+		inline int Add(T InputData, size_t Size = sizeof(T))
 		{
 			Data = (T*)std::realloc(Data, sizeof(T) * (Count + 1), 0);
 			Data[Count++] = InputData;
