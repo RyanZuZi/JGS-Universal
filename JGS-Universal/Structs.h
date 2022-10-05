@@ -634,8 +634,43 @@ namespace UE4
 		
 		if (EngineVersion == 422)
 		{
+			GObjectsAddr = Util::FindPattern("48 8B 05 ? ? ? ? 48 8B 0C C8 48 8B 04 D1", true, 3);
+			NewObjects = decltype(NewObjects)(GObjectsAddr);
 
+			FNameToStringAddr = Util::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 48 8B DA 4C 8B F1 E8 ? ? ? ? 4C 8B C8");
+			FNameToString = decltype(FNameToString)(FNameToStringAddr);
+
+			FreeMemoryAddr = Util::FindPattern("48 85 C9 74 2E 53 48 83 EC 20 48 8B D9");
+			FreeMemory = decltype(FreeMemory)(FreeMemoryAddr);
+
+			CreateDefaultObjectAddr = Util::FindPattern("4C 8B DC 57 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 ? ? ? ? 48 83 B9 ? ? ? ? ? 48 8B F9");
+			InitHostAddr = Util::FindPattern("48 8B C4 48 81 EC ? ? ? ? 48 89 58 18 4C 8D 05 ? ? ? ? 48 8B D9 48 89 78 F8 48 8D 48 88 45 33 C9 33 D2");
+			InitListenAddr = Util::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 50 48 8B BC 24 ? ? ? ? 49 8B F0 48 8B 01 48 8B D9");
+
+			SetWorldAddr = Util::FindPattern("48 89 5C 24 ? 57 48 83 EC 20 48 8B FA 48 8B D9 48 8B 91 ? ? ? ? 48 85 D2 74 28");
+			if (!SetWorldAddr)
+				SetWorldAddr = Util::FindPattern("48 89 74 24 ? 57 48 83 EC 20 48 8B F2 48 8B F9 48 8B 91 ? ? ? ? 48 85 D2");
+
+			ServerReplicateActorsAddr = Util::FindPattern("4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B 41 30 45 33 C0 49 89 5B 10 49 89 73 18 49 89 7B 20 41 8B F8");
+			if (!ServerReplicateActorsAddr)
+				ServerReplicateActorsAddr = Util::FindPattern("4C 8B DC 55 41 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B 41 30 45 33 C0");
+
+			TickFlushAddr = Util::FindPattern("4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 48 8D 05 ? ? ? ? 49 89 73 F0 33 F6");
+			if (TickFlushAddr)
+				Util::FindPattern("4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 49 89 73 F0");
+
+			GiveAbilityAddr = Util::FindPattern("48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9 ? ? ? ? ? 49 8B E8 4C 8B F2 48 8B F9");
+			InternalTryActivateAbilityAddr = Util::FindPattern("4C 89 4C 24 ? 4C 89 44 24 ? 89 54 24 10 55 53 56 57 41 54 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 45 33 F6 48 8D 05 ? ? ? ? 44 38 35 ? ? ? ? 8B FA");
+			SetClientLoginStateAddr = Util::FindPattern("48 89 5C 24 ? 57 48 83 EC 40 8B DA 48 8B F9 39 91 ? ? ? ? 0F 85 ? ? ? ? 80 3D ? ? ? ? ? 0F 82 ? ? ? ? 85 D2");
+			SpawnActorAddr = Util::FindPattern("4C 8B DC 55 56 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 45 30");
+
+			SpawnActor = decltype(SpawnActor)(SpawnActorAddr);
+
+			ProcessEventAddr = Util::FindPattern("40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? 8B 41 0C 45 33 F6 3B 05 ? ? ? ? 4D 8B F8 48 8B F2 4C 8B E1 41 B8 ? ? ? ? 7D 2A"); //Sig cause the vtable changes on 7.40
+			ProcessEvent = decltype(ProcessEvent)(ProcessEventAddr);
 		}
+
+
 
 		if (!GObjectsAddr)
 			LOG(Error, "Failed to find GObjects Address!");
