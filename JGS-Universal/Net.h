@@ -11,8 +11,19 @@ namespace Net
 	static void Listen()
 	{
 		auto Beacon = Helpers::SpawnActor(UE4::Offsets::OnlineBeaconHostClass, {}, {});
+		if (!Beacon)
+		{
+			LOG(Error, "Failed to Spawn BeaconHost!");
+			return;
+		}
+
 		*(int*)(__int64(Beacon) + UE4::Offsets::ListenPortOffset) = 6969;
-		InitHost(Beacon);
+		
+		if (!InitHost(Beacon))
+		{
+			LOG(Error, "Failed to InitHost!");
+			return;
+		}
 
 		auto NetDriver = *(UE4::UObject**)(__int64(Beacon) + UE4::Offsets::NetDriverOffset);
 		*(UE4::FName*)(__int64(NetDriver) + UE4::Offsets::NetDriverNameOffset) = UE4::FName{ 282, 0 };
@@ -23,7 +34,11 @@ namespace Net
 
 		UE4::FString Error;
 
-		InitListen(NetDriver, Helpers::GetWorld(), Url, false, Error);
+		if (!InitListen(NetDriver, Helpers::GetWorld(), Url, false, Error))
+		{
+			LOG(LogLevel::Error, "Failed to InitListen: {}", Error.ToString());
+			return;
+		}
 
 		*(UE4::UObject**)(__int64(Helpers::GetWorld()) + UE4::Offsets::NetDriverOffset2) = NetDriver;
 		SetWorld(NetDriver, Helpers::GetWorld());
