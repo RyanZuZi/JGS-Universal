@@ -28,7 +28,6 @@ DWORD WINAPI MainThread(LPVOID)
     LOG(Log, "Setup!");
 
     LOG(Log, "EngineVersion: {}", UE4::EngineVersion);
-    LOG(Log, "FortniteVersion: {}", UE4::FortniteVersion);
 
     UE4::Functions::Init();
     UE4::Offsets::Init();
@@ -38,7 +37,7 @@ DWORD WINAPI MainThread(LPVOID)
     auto LocalPlayer = LocalPlayers->operator[](0);
     auto PlayerController = *(UE4::UObject**)(__int64(LocalPlayer) + UE4::Offsets::PlayerControllerOffset);
 
-    Helpers::SwitchLevel(PlayerController, L"Athena_Terrain");
+    Helpers::SwitchLevel(PlayerController, Helpers::GetMapName());
 
     LocalPlayers->Remove(0);
 

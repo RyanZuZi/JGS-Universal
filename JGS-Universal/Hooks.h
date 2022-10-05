@@ -31,7 +31,7 @@ namespace Hooks
 			{
 				bSetup = true;
 
-				Net::Listen();
+				//Net::Listen();
 
 				CreateThread(0, 0, TickThread, 0, 0, 0);
 			}

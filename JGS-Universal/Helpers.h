@@ -92,4 +92,12 @@ namespace Helpers
 
 		return UE4::SpawnActor(GetWorld(), Class, &Transform, new UE4::FActorSpawnParameters);
 	}
+
+	static UE4::FString GetMapName()
+	{
+		if (UE4::EngineVersion >= 424)
+			return L"Apollo_Terrain";
+		else
+			return L"Athena_Terrain";
+	}
 }

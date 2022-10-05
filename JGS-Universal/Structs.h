@@ -29,7 +29,6 @@ namespace UE4
 	uint32_t ChildrenOffset = 0x38;
 	uint32_t PropertyOffsetOffset = 0x44;
 
-	double FortniteVersion;
 	double EngineVersion;
 
 	class FFixedUObjectArray* OldObjects;
@@ -501,15 +500,6 @@ namespace UE4
 
 		if (!GetEngineVersion)
 		{
-			auto VerStr = Util::FindPattern("2B 2B 46 6F 72 74 6E 69 74 65 2B 52 65 6C 65 61 73 65 2D ? ? ? ?");
-
-			if (!VerStr)
-			{
-				MessageBoxA(0, "Failed to find fortnite version!", "Fortnite", MB_ICONERROR);
-				return;
-			}
-
-			FullVersion = decltype(FullVersion.c_str())(VerStr);
 			EngineVersion = 500;
 		}
 		else
@@ -518,39 +508,23 @@ namespace UE4
 			FullVersion = toFree.ToString();
 		}
 
-		std::string FNVer = FullVersion;
 		std::string EngineVer = FullVersion;
 
 		if (!FullVersion.contains("Live") && !FullVersion.contains("Next") && !FullVersion.contains("Cert"))
 		{
 			if (GetEngineVersion)
 			{
-				FNVer.erase(0, FNVer.find_last_of("-", FNVer.length() - 1) + 1);
-				EngineVer.erase(EngineVer.find_first_of("-", FNVer.length() - 1), 40);
+				EngineVer.erase(EngineVer.find_first_of("-", EngineVer.length() - 1), 40);
 
-				if (EngineVer.find_first_of(".") != EngineVer.find_last_of(".")) // this is for 4.21.0 and itll remove the .0
+				if (EngineVer.find_first_of(".") != EngineVer.find_last_of("."))
 					EngineVer.erase(EngineVer.find_last_of("."), 2);
 
 				EngineVersion = std::stod(EngineVer) * 100;
-			}
-			else
-			{
-				const std::regex base_regex("-([0-9.]*)-");
-				std::cmatch base_match;
-
-				std::regex_search(FullVersion.c_str(), base_match, base_regex);
-
-				FNVer = base_match[1];
-
-				auto FnVerDouble = std::stod(FNVer);
-
-				FortniteVersion = FnVerDouble;
 			}
 		}
 		else
 		{
 			EngineVersion = 419;
-			FortniteVersion = 2.4;
 		}
 	}
 
@@ -678,7 +652,16 @@ namespace UE4
 			ProcessEvent = decltype(ProcessEvent)(ProcessEventAddr);
 		}
 
+		if (EngineVersion == 423)
+		{
+			ChildrenOffset = 0x48;
+			SuperOffset = 0x40;
 
+			GObjectsAddr = Util::FindPattern("48 8B 05 ? ? ? ? 48 8B 0C C8 48 8B 04 D1", true, 3);
+			NewObjects = decltype(NewObjects)(GObjectsAddr);
+
+
+		}
 
 		if (!GObjectsAddr)
 			LOG(Error, "Failed to find GObjects Address!");
