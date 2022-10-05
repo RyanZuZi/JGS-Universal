@@ -29,6 +29,7 @@ namespace UE4
 	uint32_t ChildrenOffset = 0x38;
 	uint32_t PropertyOffsetOffset = 0x44;
 
+	double FortniteVersion;
 	double EngineVersion;
 
 	class FFixedUObjectArray* OldObjects;
@@ -493,48 +494,32 @@ namespace UE4
 
 	static void InitEngineVersion()
 	{
+		//4.20.0-4008490+++Fortnite+Release-3.5
+
 		GetEngineVersion = decltype(GetEngineVersion)(Util::FindPattern("40 53 48 83 EC 20 48 8B D9 E8 ? ? ? ? 48 8B C8 41 B8 04 ? ? ? 48 8B D3"));
+		
+		std::string Temp = GetEngineVersion().ToString();
 
-		std::string FullVersion;
-		FString toFree;
+		auto FNVer = Temp.substr(Temp.find_last_of("-") + 1);
+		auto EngineVer = Temp.erase(Temp.find_first_of("-"), Temp.length() - 1);
 
-		if (!GetEngineVersion)
-		{
-			EngineVersion = 500;
-		}
-		else
-		{
-			toFree = GetEngineVersion();
-			FullVersion = toFree.ToString();
-		}
+		if (EngineVer.find_first_of(".") != EngineVer.find_last_of("."))
+			EngineVer = EngineVer.erase(EngineVer.find_last_of("."), 2);
 
-		std::string EngineVer = FullVersion;
+		EngineVersion = std::stod(EngineVer);
+		FortniteVersion = std::stod(FNVer);
 
-		if (!FullVersion.contains("Live") && !FullVersion.contains("Next") && !FullVersion.contains("Cert"))
-		{
-			if (GetEngineVersion)
-			{
-				EngineVer.erase(EngineVer.find_first_of("-", EngineVer.length() - 1), 40);
-
-				if (EngineVer.find_first_of(".") != EngineVer.find_last_of("."))
-					EngineVer.erase(EngineVer.find_last_of("."), 2);
-
-				EngineVersion = std::stod(EngineVer) * 100;
-			}
-		}
-		else
-		{
-			EngineVersion = 419;
-		}
+		LOG(Log, "FortniteVersion: {}", FortniteVersion);
+		LOG(Log, "EngineVersion: {}", EngineVer);
 	}
 
 	static void Init()
 	{
 		InitEngineVersion();
 
-		if (EngineVersion == 420)
+		if (EngineVersion == 4.20)
 		{
-			GObjectsAddr = Util::FindPattern("48 8B 05 ? ? ? ? 48 8D 14 C8 EB 02", true, 3);;
+			GObjectsAddr = Util::FindPattern("48 8B 05 ? ? ? ? 48 8D 14 C8 EB 02", true, 3);
 			OldObjects = decltype(OldObjects)(GObjectsAddr);
 
 			FNameToStringAddr = Util::FindPattern("48 89 5C 24 ? 57 48 83 EC 40 83 79 04 00 48 8B DA 48 8B F9");
@@ -567,7 +552,7 @@ namespace UE4
 			ProcessEvent = decltype(ProcessEvent)(ProcessEventAddr);
 		}
 
-		if (EngineVersion == 421)
+		if (EngineVersion == 4.21)
 		{
 			GObjectsAddr = Util::FindPattern("48 8B 05 ? ? ? ? 48 8B 0C C8 48 8B 04 D1", true, 3);
 			NewObjects = decltype(NewObjects)(GObjectsAddr);
@@ -611,7 +596,7 @@ namespace UE4
 			ProcessEvent = decltype(ProcessEvent)(ProcessEventAddr);
 		}
 		
-		if (EngineVersion == 422)
+		if (EngineVersion == 4.22)
 		{
 			ChildrenOffset = 0x48;
 			SuperOffset = 0x40;

@@ -95,7 +95,7 @@ namespace Helpers
 
 	static UE4::FString GetMapName()
 	{
-		if (UE4::EngineVersion >= 424)
+		if (UE4::EngineVersion >= 4.24)
 			return L"Apollo_Terrain";
 		else
 			return L"Athena_Terrain";

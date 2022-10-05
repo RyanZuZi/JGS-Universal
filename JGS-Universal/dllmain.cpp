@@ -27,8 +27,6 @@ DWORD WINAPI MainThread(LPVOID)
     
     LOG(Log, "Setup!");
 
-    LOG(Log, "EngineVersion: {}", UE4::EngineVersion);
-
     UE4::Functions::Init();
     UE4::Offsets::Init();
 
