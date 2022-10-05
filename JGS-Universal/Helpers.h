@@ -201,7 +201,7 @@ namespace Helpers
 
 	static void MarkItemDirty(void* FastArray, void* Item)
 	{
-		auto ReplicationID = (int*)(__int64(Item) + UE4::Offsets::ReplicationIDOffset);
+		auto ReplicationID = (int*)(__int64(Item));
 		auto ReplicationKey = (int*)(__int64(Item) + UE4::Offsets::ReplicationKeyOffset);
 		auto IDCounter = (int*)(__int64(FastArray) + 0x50);
 
@@ -246,5 +246,10 @@ namespace Helpers
 
 		auto MaxPlayers = (int*)(__int64(GetGameSession()) + UE4::Offsets::MaxPlayersOffset);
 		*MaxPlayers = 100;
+	}
+
+	static UE4::FVector GetPlayerStartLocation()
+	{
+		return { 0,0,5000 };
 	}
 }

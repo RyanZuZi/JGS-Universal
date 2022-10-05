@@ -9,6 +9,7 @@ namespace UE4
 		static UObject* Default__GameplayStatics;
 
 		static UObject* OnlineBeaconHostClass;
+		static UObject* PlayerPawnClass;
 
 		static int32_t GameInstanceOffset;
 		static int32_t LocalPlayersOffset;
@@ -22,7 +23,6 @@ namespace UE4
 		static int32_t NetDriverOffset;
 		static int32_t NetDriverOffset2;
 		static int32_t LevelCollectionsOffset;
-		static int32_t ReplicationIDOffset;
 		static int32_t ReplicationKeyOffset;
 		static int32_t CurrentPlaylistDataOffset;
 		static int32_t PlaylistReplicationKeyOffset;
@@ -34,12 +34,14 @@ namespace UE4
 		static int32_t GamePhaseOffset;
 		static int32_t GameSessionOffset;
 		static int32_t MaxPlayersOffset;
+		static int32_t bHasServerFinishedLoadingOffset;
 
 		static void Init()
 		{
 			Default__GameplayStatics = FindObject("Default__GameplayStatics");
 
 			OnlineBeaconHostClass = FindObject("OnlineBeaconHost", true, false);
+			PlayerPawnClass = FindObject("PlayerPawn_Athena.PlayerPawn_Athena_C");
 
 			GameInstanceOffset = FindOffset("GameEngine", "GameInstance");
 			LocalPlayersOffset = FindOffset("GameInstance", "LocalPlayers");
@@ -53,7 +55,6 @@ namespace UE4
 			NetDriverOffset = FindOffset("OnlineBeacon", "NetDriver");
 			NetDriverOffset2 = FindOffset("World", "NetDriver");
 			LevelCollectionsOffset = FindOffset("World", "LevelCollections");
-			ReplicationIDOffset = FindOffset("FastArraySerializerItem", "ReplicationID");
 			ReplicationKeyOffset = FindOffset("FastArraySerializerItem", "ReplicationKey");
 			CurrentPlaylistDataOffset = FindOffset("FortGameStateAthena", "CurrentPlaylistData");
 			PlaylistReplicationKeyOffset = FindOffset("PlaylistPropertyArray", "PlaylistReplicationKey");
@@ -65,6 +66,7 @@ namespace UE4
 			GamePhaseOffset = FindOffset("FortGameStateAthena", "GamePhase");
 			GameSessionOffset = FindOffset("GameModeBase", "GameSession");
 			MaxPlayersOffset = FindOffset("GameSession", "MaxPlayers");
+			bHasServerFinishedLoadingOffset = FindOffset("FortPlayerController", "bHasServerFinishedLoading");
 		}
 	}
 

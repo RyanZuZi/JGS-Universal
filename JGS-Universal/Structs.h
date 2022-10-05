@@ -626,7 +626,7 @@ namespace UE4
 			ProcessEvent = decltype(ProcessEvent)(ProcessEventAddr);
 		}
 
-		if (EngineVersion == 423)
+		if (EngineVersion == 4.23)
 		{
 			ChildrenOffset = 0x48;
 			SuperOffset = 0x40;

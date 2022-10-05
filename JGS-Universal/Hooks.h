@@ -43,6 +43,27 @@ namespace Hooks
 		return ProcessEventOG(pObject, pFunction, pParams);
 	}
 
+	static void (*SetClientLoginState)(UE4::UObject* Connection, uint8_t State);
+	static void SetClientLoginStateHook(UE4::UObject* Connection, uint8_t State)
+	{
+		if (State == 3)
+		{
+			auto PlayerController = *(UE4::UObject**)(__int64(Connection) + UE4::Offsets::PlayerControllerOffset);
+			if (PlayerController)
+			{
+				auto NewPawn = Helpers::SpawnActor(UE4::Offsets::PlayerPawnClass, Helpers::GetPlayerStartLocation(), {});
+				Helpers::Possess(PlayerController, NewPawn);
+
+				*(bool*)(__int64(PlayerController) + UE4::Offsets::bHasServerFinishedLoadingOffset) = true;
+				Helpers::OnRep_bHasServerFinishedLoading(PlayerController);
+
+
+			}
+		}
+
+		return SetClientLoginState(Connection, State);
+	}
+
 	static void Init()
 	{
 		CREATEHOOK(UE4::ProcessEventAddr, ProcessEventHook, &ProcessEventOG);
