@@ -31,8 +31,6 @@ DWORD WINAPI MainThread(LPVOID)
     UE4::Functions::Init();
     UE4::Offsets::Init();
 
-    LOG(Log, "GetWorld: {}", (uintptr_t)Helpers::GetWorld());
-
     auto GameInstance = (*(UE4::UObject**)(__int64(Helpers::GetEngine()) + UE4::Offsets::GameInstanceOffset));
     auto LocalPlayers = ((UE4::TArray<UE4::UObject*>*)(__int64(GameInstance) + UE4::Offsets::LocalPlayersOffset));
     auto LocalPlayer = LocalPlayers->operator[](0);
