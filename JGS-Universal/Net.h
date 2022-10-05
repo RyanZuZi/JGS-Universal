@@ -11,6 +11,7 @@ namespace Net
 	static void Listen()
 	{
 		auto Beacon = Helpers::SpawnActor(UE4::Offsets::OnlineBeaconHostClass, {}, {});
+
 		if (!Beacon)
 		{
 			LOG(Error, "Failed to Spawn BeaconHost!");
@@ -43,16 +44,37 @@ namespace Net
 		*(UE4::UObject**)(__int64(Helpers::GetWorld()) + UE4::Offsets::NetDriverOffset2) = NetDriver;
 		SetWorld(NetDriver, Helpers::GetWorld());
 
-		auto LevelCollections = (UE4::TArray<UE4::FLevelCollection>*)(__int64(Helpers::GetWorld()) + UE4::Offsets::LevelCollectionsOffset);
-		LevelCollections->operator[](0).NetDriver = NetDriver;
-		LevelCollections->operator[](1).NetDriver = NetDriver;
+		if (UE4::EngineVersion > 4.20)
+		{
+			auto LevelCollections = (UE4::TArray<UE4::FLevelCollection>*)(__int64(Helpers::GetWorld()) + UE4::Offsets::LevelCollectionsOffset);
+			LevelCollections->operator[](0).NetDriver = NetDriver;
+			LevelCollections->operator[](1).NetDriver = NetDriver;
+		}
+		else {
+			auto LevelCollections = (UE4::TArray<UE4::FLevelCollectionOld>*)(__int64(Helpers::GetWorld()) + UE4::Offsets::LevelCollectionsOffset);
+			LevelCollections->operator[](0).NetDriver = NetDriver;
+			LevelCollections->operator[](1).NetDriver = NetDriver;
+		}
+
+		auto ReplicationDriver = (UE4::UObject**)(__int64(NetDriver) + UE4::Offsets::ReplicationDriverOffset);
+		if (!*ReplicationDriver && SetReplicationDriver)
+		{
+			auto NewRepGraph = Helpers::SpawnObject(UE4::FindObject("FortReplicationGraph", true, false), NetDriver);
+			SetReplicationDriver(NetDriver, NewRepGraph);
+			*ReplicationDriver = NewRepGraph;
+		}
+
+		if (!*ReplicationDriver)
+		{
+			LOG(Warning, "No replication driver, will not replicate!");
+		}
 	}
 
 	static void (*TickFlush)(UE4::UObject* NetDriver);
 	static void TickFlushHook(UE4::UObject* NetDriver)
 	{
 		auto RepGraph = *(UE4::UObject**)(__int64(NetDriver) + UE4::Offsets::ReplicationDriverOffset);
-		if (RepGraph)
+		if (RepGraph && ServerReplicateActors)
 		{
 			ServerReplicateActors(RepGraph);
 		}

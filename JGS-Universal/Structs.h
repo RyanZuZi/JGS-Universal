@@ -38,7 +38,6 @@ namespace UE4
 	void(*FNameToString)(void*, struct FString&);
 	void(*FreeMemory)(void*);
 	void(*ProcessEvent)(void*, void*, void*);
-	struct UObject* (*SpawnActor)(struct UObject* World, struct UObject* Class, struct FTransform* Transform, struct FActorSpawnParameters* SpawnParms);
 
 	template<class T>
 	struct TArray
@@ -544,9 +543,6 @@ namespace UE4
 			GiveAbilityAddr = Util::FindPattern("48 89 5C 24 ? 56 57 41 56 48 83 EC 20 83 B9 ? ? ? ? ? 49 8B F0 4C 8B F2 48 8B D9 7E 61 48 63 BB ? ? ? ? 48 81 C3 ? ? ? ?");
 			InternalTryActivateAbilityAddr = Util::FindPattern("4C 89 4C 24 ? 4C 89 44 24 ? 89 54 24 10 55 53 56 57 41 54 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ?");
 			SetClientLoginStateAddr = Util::FindPattern("48 89 74 24 ? 57 48 83 EC 40 8B FA 48 8B F1 39 91 ? ? ? ? 75 50 80 3D ? ? ? ? ? 0F 82 ? ? ? ? 48 8B 05 ? ? ? ?");
-			SpawnActorAddr = Util::FindPattern("49 89 5B E8 48 8D 05 ? ? ? ? 49 89 73 E0 45 33");
-
-			SpawnActor = decltype(SpawnActor)(SpawnActorAddr);
 
 			ProcessEventAddr = (uintptr_t)OldObjects->GetByIndex(0)->VFT[0x40];
 			ProcessEvent = decltype(ProcessEvent)(ProcessEventAddr);
@@ -588,10 +584,6 @@ namespace UE4
 			if (!SetClientLoginStateAddr)
 				SetClientLoginStateAddr = Util::FindPattern("48 89 5C 24 ? 57 48 83 EC 40 8B DA 48 8B F9 39 91 ? ? ? ? 0F 85 ? ? ? ? 80 3D ? ? ? ? ? 0F 82 ? ? ? ? 85 D2");
 
-			SpawnActorAddr = Util::FindPattern("49 89 5B E8 48 8D 05 ? ? ? ? 49 89 73 E0 45 33");
-
-			SpawnActor = decltype(SpawnActor)(SpawnActorAddr);
-
 			ProcessEventAddr = (uintptr_t)NewObjects->GetByIndex(0)->VFT[0x40];
 			ProcessEvent = decltype(ProcessEvent)(ProcessEventAddr);
 		}
@@ -629,9 +621,6 @@ namespace UE4
 			GiveAbilityAddr = Util::FindPattern("48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9 ? ? ? ? ? 49 8B E8 4C 8B F2 48 8B F9");
 			InternalTryActivateAbilityAddr = Util::FindPattern("4C 89 4C 24 ? 4C 89 44 24 ? 89 54 24 10 55 53 56 57 41 54 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 45 33 F6 48 8D 05 ? ? ? ? 44 38 35 ? ? ? ? 8B FA");
 			SetClientLoginStateAddr = Util::FindPattern("48 89 5C 24 ? 57 48 83 EC 40 8B DA 48 8B F9 39 91 ? ? ? ? 0F 85 ? ? ? ? 80 3D ? ? ? ? ? 0F 82 ? ? ? ? 85 D2");
-			SpawnActorAddr = Util::FindPattern("4C 8B DC 55 56 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 45 30");
-
-			SpawnActor = decltype(SpawnActor)(SpawnActorAddr);
 
 			ProcessEventAddr = Util::FindPattern("40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? 8B 41 0C 45 33 F6 3B 05 ? ? ? ? 4D 8B F8 48 8B F2 4C 8B E1 41 B8 ? ? ? ? 7D 2A"); //Sig cause the vtable changes on 7.40
 			ProcessEvent = decltype(ProcessEvent)(ProcessEventAddr);
@@ -674,16 +663,20 @@ namespace UE4
 			LOG(Error, "Failed to find InternalTryActivateAbility Address!");
 		if (!SetClientLoginStateAddr)
 			LOG(Error, "Failed to find SetClientLoginState Address!");
-		if (!SpawnActor)
-			LOG(Error, "Failed to find SpawnActor Address!");
 	}
 
 	//Other structs
 
 	struct FURL
 	{
-		char pad[0x20];
-		int Port;
+		FString                                     Protocol;                                                 // 0x0000(0x0010) (ZeroConstructor)
+		FString                                     Host;                                                     // 0x0010(0x0010) (ZeroConstructor)
+		int                                         Port;                                                     // 0x0020(0x0004) (ZeroConstructor, IsPlainOldData)
+		int                                         Valid;                                                    // 0x0024(0x0004) (ZeroConstructor, IsPlainOldData)
+		FString                                     Map;                                                      // 0x0028(0x0010) (ZeroConstructor)
+		FString                                     RedirectUrl;                                              // 0x0038(0x0010) (ZeroConstructor)
+		TArray<FString>                             Op;                                                       // 0x0048(0x0010) (ZeroConstructor)
+		FString                                     Portal;                                                   // 0x0058(0x0010) (ZeroConstructor)
 	};
 
 	struct FVector
@@ -719,28 +712,53 @@ namespace UE4
 
 	struct FLevelCollection
 	{
-		char pad[0x8];
+		//char pad[0x8];
 		UObject* GameState;
 		UObject* NetDriver;
 		UObject* DemoNetDriver;
 		UObject* PersistentLevel;
 		char pad1[0x50];
-		char pad2[0x8];
+	};
+
+	struct FLevelCollectionOld
+	{
+		//char pad[0x8];
+		UObject* GameState;
+		UObject* NetDriver;
+		UObject* DemoNetDriver;
+		UObject* PersistentLevel;
+		char pad1[0x50];
 	};
 
 	struct FActorSpawnParameters
 	{
-		// char pad[0x40];
+		FActorSpawnParameters() : Name(), Template(nullptr), Owner(nullptr), Instigator(nullptr), OverrideLevel(nullptr),
+			SpawnCollisionHandlingOverride(), bRemoteOwned(0), bNoFail(0),
+			bDeferConstruction(0),
+			bAllowDuringConstructionScript(0),
+			NameMode(),
+			ObjectFlags()
+		{
+		}
+		;
+
 		FName Name;
-		UObject* Template; // AActor*
-		UObject* Owner; // AActor*
-		UObject* Instigator; // APawn*
-		UObject* OverrideLevel; // ULevel*
+		UObject* Template;
+		UObject* Owner;
+		UObject* Instigator;
+		UObject* OverrideLevel;
 		ESpawnActorCollisionHandlingMethod SpawnCollisionHandlingOverride;
-		uint16_t	bRemoteOwned : 1;
-		uint16_t	bNoFail : 1;
-		uint16_t	bDeferConstruction : 1;
-		uint16_t	bAllowDuringConstructionScript : 1;
+
+	private:
+		uint8_t bRemoteOwned : 1;
+
+	public:
+		bool IsRemoteOwned() const { return bRemoteOwned; }
+
+		uint8_t bNoFail : 1;
+		uint8_t bDeferConstruction : 1;
+		uint8_t bAllowDuringConstructionScript : 1;
+		uint8_t NameMode;
 		int ObjectFlags;
 	};
 }

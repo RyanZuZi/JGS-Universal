@@ -55,6 +55,7 @@ namespace UE4
 		static UObject* ServerChoosePartFunc;
 		static UObject* BeginDeferredActorSpawnFromClassFunc;
 		static UObject* FinishSpawningActorFunc;
+		static UObject* SpawnObjectFunc;
 
 		static void Init()
 		{
@@ -67,6 +68,7 @@ namespace UE4
 			ServerChoosePartFunc = FindFunction("FortPlayerPawn", "ServerChoosePart");
 			BeginDeferredActorSpawnFromClassFunc = FindFunction("GameplayStatics", "BeginDeferredActorSpawnFromClass");
 			FinishSpawningActorFunc = FindFunction("GameplayStatics", "FinishSpawningActor");
+			SpawnObjectFunc = FindFunction("GameplayStatics", "SpawnObject");
 		}
 	}
 }
