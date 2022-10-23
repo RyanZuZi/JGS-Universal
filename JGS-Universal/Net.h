@@ -70,18 +70,6 @@ namespace Net
 		}
 	}
 
-	static void (*TickFlush)(UE4::UObject* NetDriver);
-	static void TickFlushHook(UE4::UObject* NetDriver)
-	{
-		auto RepGraph = *(UE4::UObject**)(__int64(NetDriver) + UE4::Offsets::ReplicationDriverOffset);
-		if (RepGraph && ServerReplicateActors)
-		{
-			ServerReplicateActors(RepGraph);
-		}
-
-		return TickFlush(NetDriver);
-	}
-
 	static void Init()
 	{
 		InitHost = decltype(InitHost)(UE4::InitHostAddr);
@@ -89,7 +77,5 @@ namespace Net
 		SetWorld = decltype(SetWorld)(UE4::SetWorldAddr);
 		SetReplicationDriver = decltype(SetReplicationDriver)(UE4::SetReplicationDriverAddr);
 		ServerReplicateActors = decltype(ServerReplicateActors)(UE4::ServerReplicateActorsAddr);
-
-		CREATEHOOK(UE4::TickFlushAddr, TickFlushHook, &TickFlush);
 	}
 }

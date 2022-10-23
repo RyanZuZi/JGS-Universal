@@ -2,6 +2,18 @@
 
 namespace Hooks
 {
+	static void (*TickFlush)(UE4::UObject* NetDriver);
+	static void TickFlushHook(UE4::UObject* NetDriver)
+	{
+		auto RepGraph = *(UE4::UObject**)(__int64(NetDriver) + UE4::Offsets::ReplicationDriverOffset);
+		if (RepGraph && Net::ServerReplicateActors)
+		{
+			Net::ServerReplicateActors(RepGraph);
+		}
+
+		return TickFlush(NetDriver);
+	}
+
 	DWORD WINAPI TickThread(LPVOID)
 	{
 		static bool bStartedAircraft = false;
@@ -36,6 +48,8 @@ namespace Hooks
 				Net::Listen();
 				Helpers::InitMatch();
 
+				CREATEHOOK(UE4::TickFlushAddr, TickFlushHook, &TickFlush);
+
 				CreateThread(0, 0, TickThread, 0, 0, 0);
 			}
 		}
@@ -67,5 +81,6 @@ namespace Hooks
 	static void Init()
 	{
 		CREATEHOOK(UE4::ProcessEventAddr, ProcessEventHook, &ProcessEventOG);
+		CREATEHOOK(UE4::SetClientLoginStateAddr, SetClientLoginStateHook, &SetClientLoginState);
 	}
 }

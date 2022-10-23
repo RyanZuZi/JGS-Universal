@@ -238,7 +238,7 @@ namespace Helpers
 	static void InitMatch()
 	{
 		auto SoloPlaylist = UE4::FindObject("Playlist_DefaultSolo.Playlist_DefaultSolo");
-		SetPlaylist(GetGameState(), SoloPlaylist);
+		//SetPlaylist(GetGameState(), SoloPlaylist);
 
 		auto GamePhase = (int*)(__int64(GetGameState()) + UE4::Offsets::GamePhaseOffset);
 		*GamePhase = 0;

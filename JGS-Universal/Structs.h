@@ -722,7 +722,7 @@ namespace UE4
 
 	struct FLevelCollectionOld
 	{
-		//char pad[0x8];
+		char pad[0x8];
 		UObject* GameState;
 		UObject* NetDriver;
 		UObject* DemoNetDriver;

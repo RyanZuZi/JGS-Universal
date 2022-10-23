@@ -22,9 +22,10 @@ DWORD WINAPI MainThread(LPVOID)
 
     LOG(Log, "Setting up!");
 
+    MH_Initialize();
+
     UE4::Init();
     Net::Init();
-    MH_Initialize();
     
     LOG(Log, "Setup!");
 
